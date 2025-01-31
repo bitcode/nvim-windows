@@ -432,6 +432,34 @@ local function setup_yamlls()
     })
 end
 
+local function setup_omnisharp()
+    local omnisharp_path =
+    "C:\\Users\\bit\\AppData\\Local\\nvim-data\\mason\\packages\\omnisharp\\libexec\\OmniSharp.dll"
+
+    lspconfig.omnisharp.setup({
+        cmd = { "dotnet", omnisharp_path },
+        capabilities = capabilities,
+        on_attach = on_attach,
+        settings = {
+            FormattingOptions = {
+                EnableEditorConfigSupport = true,
+                OrganizeImports = nil,
+            },
+            MsBuild = {
+                LoadProjectsOnDemand = nil,
+            },
+            RoslynExtensionsOptions = {
+                EnableAnalyzersSupport = nil,
+                EnableImportCompletion = nil,
+                AnalyzeOpenDocumentsOnly = nil,
+            },
+            Sdk = {
+                IncludePrereleases = true,
+            },
+        }
+    })
+end
+
 -- A table mapping filetypes to setup functions
 _G.filetype_to_lsp = {
     ["c"] = setup_clangd,
@@ -466,6 +494,8 @@ _G.filetype_to_lsp = {
     ["yaml"] = setup_yamlls,
     ["yml"] = setup_yamlls,
     ["htmx"] = setup_htmx,
+    ["csharp"] = setup_omnisharp,
+    ["cs"] = setup_omnisharp,
 }
 
 local function setup_server(server_name, setup_fn)
@@ -477,12 +507,12 @@ end
 vim.api.nvim_create_autocmd("FileType", {
     callback = function(args)
         local ft = vim.bo[args.buf].filetype
-        local lsp_setup = filetype_to_lsp[ft]
+        local lsp_setup = _G.filetype_to_lsp[ft]
         if lsp_setup then
             vim.notify("Detected filetype: " .. ft, vim.log.levels.INFO)
             setup_server(ft, lsp_setup)
         else
             vim.notify("No LSP configuration for filetype: " .. ft, vim.log.levels.WARN)
         end
-    end
+    end,
 })

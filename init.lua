@@ -69,6 +69,22 @@ require("lazy").setup("plugins", {
 
 require("settings")
 require('lualine').setup()
+-- Load LSP configuration
+require("settings.lspconfig")
+
+vim.api.nvim_create_autocmd("BufRead", {
+    callback = function()
+        local bufnr = vim.api.nvim_get_current_buf()
+        vim.defer_fn(function()
+            if vim.api.nvim_buf_is_valid(bufnr) then
+                local ft = vim.bo[bufnr].filetype
+                if _G.filetype_to_lsp[ft] then
+                    _G.filetype_to_lsp[ft]()
+                end
+            end
+        end, 100)
+    end
+})
 
 vim.api.nvim_create_user_command('LspInfo', function()
     local clients = vim.lsp.get_active_clients()
@@ -175,4 +191,14 @@ local signs = { Error = " ", Warn = " ", Hint = " ", Info = " " }
 for type, icon in pairs(signs) do
     local hl = "DiagnosticSign" .. type
     vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
+end
+
+local function safe_setup(server_name, setup_fn)
+    local ok, err = pcall(setup_fn)
+    if not ok then
+        vim.notify(
+            string.format("Error setting up LSP %s: %s", server_name, err),
+            vim.log.levels.ERROR
+        )
+    end
 end
